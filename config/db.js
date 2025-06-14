@@ -1,13 +1,23 @@
-const mongoose = require("mongoose");
+const pgp = require("pg-promise")();
+require("dotenv").config();
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("Connected to MongoDB");
-    return mongoose.connection;
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-  }
-};
+// PostgreSQL Database Connection
+const db = pgp({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+});
 
-module.exports = connectDB;
+// Test database connection
+db.query("SELECT NOW()")
+  .then(() => {
+    console.log("Database connected successfully");
+  })
+  .catch((err) => {
+    console.error("Database connection error:", err);
+    process.exit(1);
+  });
+
+module.exports = db;

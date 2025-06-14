@@ -1,27 +1,41 @@
-const mongoose = require("mongoose");
+const db = require("../config/db");
 
-const userSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: [true, "Name is required"] },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-    },
-    password: { type: String, required: [true, "Password is required"] },
-    otp: { type: String, required: [true, "OTP is required"] },
-    otpExpiry: {
-      type: Date,
-      required: [true, "OTP expiry is required"],
-      default: Date.now() + 10 * 60 * 1000,
-    },
-    isVerified: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-  },
-  { timestamps: true }
-);
+// User Table Creation
+const createUserTable = async () => {
+  const query = `
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      email VARCHAR(100) UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      otp VARCHAR(6) NOT NULL,
+      otp_expiry TIMESTAMP DEFAULT CURRENT_TIMESTAMP + INTERVAL '10 minutes',
+      is_verified BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+  await db.none(query);  
+};
 
-const User = mongoose.model("User", userSchema);
+// Create a new User
+const createUser = async (name, email, password, otp) => {
+  console.log("data", name, email, password, otp);
+  
+  const query = `
+    INSERT INTO users (name, email, password, otp)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id, name, email, otp;
+  `;
+  const result = await db.one(query, [name, email, password, otp]);
+  return result;
+};
 
-module.exports = User;
+// Fetch All Users (Optional)
+const getUsers = async () => {
+  const query = `SELECT * FROM users`;
+  const result = await db.any(query);
+  return result;
+};
+
+module.exports = { createUserTable, createUser, getUsers };
