@@ -4,6 +4,7 @@ const generateOtp = require("../utils/generateOTP");
 
 const register = async (req, res) => {
   const { name, email, password } = req.body;
+  console.log("req", name, email, password);
 
   const userExists = await findUserByEmail(email);
   if (userExists)

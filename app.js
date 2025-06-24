@@ -7,4 +7,6 @@ const app = express();
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
+
 module.exports = app;
