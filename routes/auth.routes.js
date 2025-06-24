@@ -7,6 +7,9 @@ const {
   resetPassword,
 } = require("../controllers/auth.controller");
 
+const router = express.Router();
+
+// POST /register route for user registration
 router.post("/register", register);
 router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
