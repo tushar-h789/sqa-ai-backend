@@ -1,27 +1,31 @@
-const mongoose = require("mongoose");
+const pool = require("../config/db");
 
-const userSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: [true, "Name is required"] },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-    },
-    password: { type: String, required: [true, "Password is required"] },
-    otp: { type: String, required: [true, "OTP is required"] },
-    otpExpiry: {
-      type: Date,
-      required: [true, "OTP expiry is required"],
-      default: Date.now() + 10 * 60 * 1000,
-    },
-    isVerified: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-  },
-  { timestamps: true }
-);
+const findUserByEmail = async (email) => {
+  const res = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+  return res.rows[0];
+};
 
-const User = mongoose.model("User", userSchema);
+const createUser = async (name, email, hashedPassword) => {
+  const res = await pool.query(
+    "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING",
+    [name, email, hashedPassword]
+  );
+  return res.rows[0];
+};
 
-module.exports = User;
+const sendOtpForUser = async (email, options, expiry) => {
+  await pool.query(
+    "UPDATE  users SET otp = $1, otp_expiry = $2 WHERE email = $3",
+    [otp, expiry, email]
+  );
+};
+
+const verifyOtp = async (email, otp) => {
+  const res = await pool.query(
+    "SELECT * FROM users WHERE email = $1 AND otp = $2 AND otp_expiry > NOW()",
+    [email, otp]
+  );
+  return res.rows[0];
+};
+
+module.exports = { findUserByEmail, createUser, sendOtpForUser, verifyOtp };
