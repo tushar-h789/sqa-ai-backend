@@ -12,7 +12,9 @@ const {
   findPendingUserByEmail,
   createPendingUser,
   deletePendingUser,
+  updatePendingUserOtp,
 } = require("../models/pendingUser.modal");
+const jwt = require("jsonwebtoken");
 
 // const register = async (req, res) => {
 //   const { name, email, password } = req.body;
@@ -108,12 +110,16 @@ const login = async (req, res) => {
   const user = await findUserByEmail(email);
 
   if (!user) {
-    return res.status(401).json({ message: "Invalid credentials" });
+    return res
+      .status(401)
+      .json({ message: "The provided email is incorrect. Please try again. " });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return res.status(401).json({ message: "Invalid credentials" });
+    return res.status(401).json({
+      message: "The provided password is incorrect. Please try again.",
+    });
   }
 
   const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
