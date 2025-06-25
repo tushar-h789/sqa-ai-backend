@@ -1,31 +1,32 @@
-const pool = require("../config/db");
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
 
 const findUserByEmail = async (email) => {
-  const res = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-  return res.rows[0];
+  return await prisma.user.findUnique({ where: { email } });
 };
 
-const createUser = async (name, email, hashedPassword) => {
-  const res = await pool.query(
-    "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING",
-    [name, email, hashedPassword]
-  );
-  return res.rows[0];
+const createUser = async (name, email, hashedPassword, otp, otp_expiry) => {
+  return await prisma.user.create({
+    data: { name, email, password: hashedPassword, otp, otp_expiry },
+  });
 };
 
-const sendOtpForUser = async (email, options, expiry) => {
-  await pool.query(
-    "UPDATE  users SET otp = $1, otp_expiry = $2 WHERE email = $3",
-    [otp, expiry, email]
-  );
+const sendOtpForUser = async (email, otp, expiry) => {
+  return await prisma.user.update({
+    where: { email },
+    data: { otp, otp_expiry: expiry },
+  });
 };
 
 const verifyOtp = async (email, otp) => {
-  const res = await pool.query(
-    "SELECT * FROM users WHERE email = $1 AND otp = $2 AND otp_expiry > NOW()",
-    [email, otp]
-  );
-  return res.rows[0];
+  return await prisma.user.findFirst({
+    where: {
+      email,
+      otp,
+      otp_expiry: { gt: new Date() },
+    },
+  });
 };
 
 module.exports = { findUserByEmail, createUser, sendOtpForUser, verifyOtp };

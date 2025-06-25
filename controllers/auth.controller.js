@@ -1,10 +1,15 @@
-const { findUserByEmail, verifyOtp } = require("../models/user.model");
+const {
+  findUserByEmail,
+  verifyOtp,
+  createUser,
+} = require("../models/user.model");
 const sendEmail = require("../utils/emailSender");
 const generateOtp = require("../utils/generateOTP");
+const bcrypt = require("bcryptjs");
+const otpEmailTemplate = require("../utils/otpEmailTemplate");
 
 const register = async (req, res) => {
   const { name, email, password } = req.body;
-  console.log("req", name, email, password);
 
   const userExists = await findUserByEmail(email);
   if (userExists)
@@ -12,9 +17,15 @@ const register = async (req, res) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await createUser(name, email, hashedPassword);
+  const otp = generateOtp();
+  const otpExpiry = new Date(Date.now() + 10 * 60000);
+
+  const user = await createUser(name, email, hashedPassword, otp, otpExpiry);
+
+  await sendEmail(email, "Verify your email", otpEmailTemplate(otp));
+
   res.status(201).json({
-    message: "User registered successfully",
+    message: "OTP sent to your email. Please verify.",
     user: { id: user.id, email: user.email },
   });
 };
