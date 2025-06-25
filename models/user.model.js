@@ -6,9 +6,16 @@ const findUserByEmail = async (email) => {
   return await prisma.user.findUnique({ where: { email } });
 };
 
-const createUser = async (name, email, hashedPassword, otp, otp_expiry) => {
+const createUser = async (
+  name,
+  email,
+  hashedPassword,
+  role = "user",
+  otp,
+  otp_expiry
+) => {
   return await prisma.user.create({
-    data: { name, email, password: hashedPassword, otp, otp_expiry },
+    data: { name, email, password: hashedPassword, role, otp, otp_expiry },
   });
 };
 

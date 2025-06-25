@@ -82,7 +82,12 @@ const otpVerify = async (req, res) => {
   }
 
   // Move to users table
-  await createUser(pendingUser.name, pendingUser.email, pendingUser.password);
+  await createUser(
+    pendingUser.name,
+    pendingUser.email,
+    pendingUser.password,
+    "user"
+  );
   await deletePendingUser(email);
 
   res
@@ -122,9 +127,13 @@ const login = async (req, res) => {
     });
   }
 
-  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
-  });
+  const token = jwt.sign(
+    { id: user.id, name: user.name, role: user.role },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+    }
+  );
   res.json({ token });
 };
 

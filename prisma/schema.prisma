@@ -15,6 +15,7 @@ model User {
   password   String
   otp        String?
   otp_expiry DateTime?
+  role       String    @default("user")
 }
 
 model PendingUser {
