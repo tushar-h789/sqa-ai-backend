@@ -9,10 +9,20 @@ datasource db {
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
+  id         String    @id @default(uuid()) @db.Uuid
   name       String
   email      String    @unique
   password   String
   otp        String?
   otp_expiry DateTime?
+}
+
+model PendingUser {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  email      String   @unique
+  password   String
+  otp        String
+  expired_at DateTime
+  try_count  Int      @default(0)
 }

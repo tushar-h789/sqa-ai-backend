@@ -2,32 +2,105 @@ const {
   findUserByEmail,
   verifyOtp,
   createUser,
+  sendOtpForUser,
 } = require("../models/user.model");
 const sendEmail = require("../utils/emailSender");
 const generateOtp = require("../utils/generateOTP");
 const bcrypt = require("bcryptjs");
 const otpEmailTemplate = require("../utils/otpEmailTemplate");
+const {
+  findPendingUserByEmail,
+  createPendingUser,
+  deletePendingUser,
+} = require("../models/pendingUser.modal");
+
+// const register = async (req, res) => {
+//   const { name, email, password } = req.body;
+
+//   const userExists = await findUserByEmail(email);
+//   if (userExists)
+//     return res.status(400).json({ message: "User already exists" });
+
+//   const hashedPassword = await bcrypt.hash(password, 10);
+
+//   const otp = generateOtp();
+//   const otpExpiry = new Date(Date.now() + 10 * 60000);
+
+//   const user = await createUser(name, email, hashedPassword, otp, otpExpiry);
+
+//   await sendEmail(email, "Verify your email", otpEmailTemplate(otp));
+
+//   res.status(201).json({
+//     message: "OTP sent to your email. Please verify.",
+//     user: { id: user.id, email: user.email },
+//   });
+// };
 
 const register = async (req, res) => {
   const { name, email, password } = req.body;
-
-  const userExists = await findUserByEmail(email);
-  if (userExists)
-    return res.status(400).json({ message: "User already exists" });
+  const existingPending = await findPendingUserByEmail(email);
+  if (existingPending) {
+    return res
+      .status(400)
+      .json({ message: "Please verify your email with the OTP sent." });
+  }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-
   const otp = generateOtp();
-  const otpExpiry = new Date(Date.now() + 10 * 60000);
+  const expired_at = new Date(Date.now() + 5 * 60000); // 5 minutes
 
-  const user = await createUser(name, email, hashedPassword, otp, otpExpiry);
+  await createPendingUser(name, email, hashedPassword, otp, expired_at);
 
   await sendEmail(email, "Verify your email", otpEmailTemplate(otp));
+  res.status(201).json({ message: "OTP sent to your email. Please verify." });
+};
 
-  res.status(201).json({
-    message: "OTP sent to your email. Please verify.",
-    user: { id: user.id, email: user.email },
-  });
+const otpVerify = async (req, res) => {
+  const { email, otp } = req.body;
+  const pendingUser = await findPendingUserByEmail(email);
+  if (!pendingUser)
+    return res.status(400).json({ message: "No pending registration found." });
+
+  if (pendingUser.otp !== otp)
+    return res.status(400).json({ message: "Invalid OTP." });
+
+  if (pendingUser.expired_at < new Date()) {
+    return res
+      .status(400)
+      .json({ message: "OTP expired. Please request a new one." });
+  }
+
+  // Check if user already exists
+  const existingUser = await findUserByEmail(email);
+  if (existingUser) {
+    // Optionally: await deletePendingUser(email);
+    return res
+      .status(400)
+      .json({ message: "User already verified. Please login." });
+  }
+
+  // Move to users table
+  await createUser(pendingUser.name, pendingUser.email, pendingUser.password);
+  await deletePendingUser(email);
+
+  res
+    .status(200)
+    .json({ message: "Email verified and registration complete." });
+};
+
+const resendOtp = async (req, res) => {
+  const { email } = req.body;
+  const pendingUser = await findPendingUserByEmail(email);
+  if (!pendingUser)
+    return res.status(400).json({ message: "No pending registration found." });
+
+  const otp = generateOtp();
+  const expired_at = new Date(Date.now() + 5 * 60000);
+
+  await updatePendingUserOtp(email, otp, expired_at);
+
+  await sendEmail(email, "Your new OTP", otpEmailTemplate(otp));
+  res.status(200).json({ message: "New OTP sent to your email." });
 };
 
 const login = async (req, res) => {
@@ -82,4 +155,11 @@ const resetPassword = async (req, res) => {
   res.json({ message: "Password reset successfully" });
 };
 
-module.exports = { register, login, forgotPassword, resetPassword };
+module.exports = {
+  register,
+  login,
+  forgotPassword,
+  resetPassword,
+  otpVerify,
+  resendOtp,
+};
