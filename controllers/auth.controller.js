@@ -170,6 +170,12 @@ const resetPassword = async (req, res) => {
   res.json({ message: "Password reset successfully" });
 };
 
+const logout = (req, res) => {
+  // For JWT stateless auth, logout is handled on the client by deleting the token.
+  // Optionally, you can implement token blacklisting here.
+  res.status(200).json({ message: "Logged out successfully." });
+};
+
 module.exports = {
   register,
   login,
@@ -177,4 +183,5 @@ module.exports = {
   resetPassword,
   otpVerify,
   resendOtp,
+  logout,
 };
