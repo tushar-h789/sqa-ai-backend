@@ -11,7 +11,7 @@ const {
 
 // POST /register route for user registration
 router.post("/register", register);
-router.post("/otp-verify", otpVerify);
+router.post("/verify-otp", otpVerify);
 router.post("/resend-otp", resendOtp);
 router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
